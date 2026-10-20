@@ -369,11 +369,11 @@ resultBox.innerText = "正在请求，请稍候...";
 
 try {
     const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 60000); // 60秒
-    
-    // 换成 Railway 公网地址（部署后填你的真实域名）
-    const API_BASE = "https://你的railway域名.up.railway.app";
-    
+    const tid = setTimeout(() => controller.abort(), 60000); // 实际60秒超时（6000是6秒，已帮你改为60000）
+
+    // 使用相对路径，本地(5002)和Railway公网自动适配，无需切换
+    const API_BASE = "";
+
     const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -381,11 +381,11 @@ try {
         signal: controller.signal
     });
     clearTimeout(tid);
-    
+
     const data = await res.json();
     resultBox.innerText = data.content || "返回空";
 } catch(e) {
-    resultBox.innerText = e.name==="AbortError" ? "60秒超时!" : "错误: "+e.message;
+    resultBox.innerText = e.name === "AbortError" ? "60秒超时！" : "错误：" + e.message;
 }
 }
 //清空AI区域
