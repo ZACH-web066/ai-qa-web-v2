@@ -359,37 +359,38 @@ function searchKnowledge(question){
 
 // AI提问主函数
 async function sendAiQuestion(){
-    // 直接取AI拓展区的输入框（按你图里的结构，若不对请在F12里确认ID）
+    // 直接取AI拓展区的输入框
     const inputEl = document.querySelector('input[placeholder*="拓展"], #aiInput');
     const question = (inputEl ? inputEl.value : "C语言结构").trim();
     
     // 结果区（显示超时的那个div）
-    const resultBox = document.getElementById('aiResult') || document.querySelector('div[style*="AI"] ~ div');
-    resultBox.innerText = "正在请求，请稍候...";
+const resultBox = document.getElementById('aiResult') || document.querySelector('div[style*="AI"] ~ div');
+resultBox.innerText = "正在请求，请稍候...";
+
+try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 60000); // 60秒
     
-    try {
-        const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 60000); // 60秒
-        
-        // 必须写死 5002
-        const res = await fetch("http://127.0.0.1:5002/api/chat", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({prompt: question}),
-            signal: controller.signal
-        });
-        clearTimeout(tid);
-        
-        const data = await res.json();
-        resultBox.innerText = data.content || "返回空";
-    } catch(e) {
-        resultBox.innerText = e.name==="AbortError" ? "60秒超时！" : "错误: "+e.message;
-    }
+    // 换成 Railway 公网地址（部署后填你的真实域名）
+    const API_BASE = "https://你的railway域名.up.railway.app";
+    
+    const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({prompt: question}),
+        signal: controller.signal
+    });
+    clearTimeout(tid);
+    
+    const data = await res.json();
+    resultBox.innerText = data.content || "返回空";
+} catch(e) {
+    resultBox.innerText = e.name==="AbortError" ? "60秒超时!" : "错误: "+e.message;
 }
 //清空AI区域
 function clearAi(){
     document.getElementById("aiInput").value = "";
-    document.getElementById("aiResult").innerText = "AI：你可以向我提问大一C语言或者思政相关知识点，优先检索本地知识库";
+    document.getElementById("aiResult").innerText = "AI:你可以向我提问大一C语言或者思政相关知识点,优先检索本地知识库";
 }
 
 
