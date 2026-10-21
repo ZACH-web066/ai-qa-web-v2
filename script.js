@@ -14,7 +14,7 @@ async function sendAiQuestion(){
     }
 
     resultBox.innerText = "AI正在思考中……";
-    try {
+   try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 12000);
 
@@ -26,38 +26,19 @@ async function sendAiQuestion(){
         });
         clearTimeout(timeoutId);
 
-        // 流式解析
-        resultBox.innerText = "";
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop();
-
-            for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                    const dataStr = line.slice(6);
-                    if (dataStr === "[DONE]") continue;
-                    try {
-                        const json = JSON.parse(dataStr);
-                        if (json.content) {
-                            resultBox.innerText += json.content;
-                        }
-                    } catch (e) {}
-                }
-            }
-        }
-    } catch (err) {
-        if(err.name === "AbortError"){
-            resultBox.innerText = "请求超时，请检查后端服务";
+        // 非流式：直接解析 JSON
+        const data = await res.json();
+        if (data.content) {
+            resultBox.innerText = data.content;
         } else {
-            resultBox.innerText = "请求失败：" + err;
+            resultBox.innerText = "（AI 返回为空）";
+        }
+
+    } catch (err) {
+        if (err.name === "AbortError") {
+            resultBox.innerText = " 请求超时，请检查后端服务或网络";
+        } else {
+            resultBox.innerText = " 请求失败：" + err.message;
             console.error(err);
         }
     }
