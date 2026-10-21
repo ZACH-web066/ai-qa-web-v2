@@ -16,11 +16,9 @@ CORS(app, resources={r"/api/*": {
 }})
 API_URL = "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
 
-# 从环境变量读，绝不硬编码（.env 本地用，Railway 后台配）
 API_KEY = os.getenv("VOLC_API_KEY", "")
 MODEL = os.getenv("VOLC_MODEL", "")
 
-# 本地启动时的友好提示（帮你确认环境变量有没有读到）
 if not API_KEY or not MODEL:
     print("⚠️  警告：VOLC_API_KEY 或 VOLC_MODEL 未设置，请检查 .env 文件或 Railway 变量！")
 else:
@@ -32,15 +30,14 @@ def index():
 
 @app.route("/api/chat", methods=["POST", "OPTIONS"])
 def chat():
-    # 预检请求直接返回 204
     if request.method == "OPTIONS":
         return '', 204
 
-    # 兼容前端两种字段名：content 或 prompt
+    # ✅ 改动1：兼容更多字段名，加终端打印
     data = request.get_json(force=True, silent=True) or {}
-    user_msg = data.get('content') or data.get('prompt') or 'hi'
+    user_msg = data.get('content') or data.get('prompt') or data.get('q') or data.get('message') or 'hi'
+    print(f"📩 收到提问: {user_msg}")  # 终端看这行，确认不是 'hi' 就说明前端传过来了
 
-    # 🚨 如果 Key 没读到，直接返回清晰错误，而不是让火山返回模糊报错
     if not API_KEY:
         return jsonify({"content": "服务端未配置 API Key，请联系开发者或检查 .env / Railway 环境变量"}), 500
 
@@ -59,26 +56,30 @@ def chat():
             {"role": "user", "content": user_msg}
         ],
         "stream": False,
-        "temperature": 0.7  # 加一个，避免部分模型严格校验
+        "temperature": 0.7
     }
 
     try:
-        r = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+        print(" 请求火山方舟中...")
+        r = requests.post(API_URL, headers=headers, json=payload, timeout=(20,60))
         r.raise_for_status()
         obj = r.json()
         answer = obj["choices"][0]["message"]["content"]
+        print(f"返回成功，长度: {len(answer)}")
         return jsonify({"content": answer})
-
+    except requests.exceptions.Timeout:
+        print("火山方舟请求超时！")
+        return jsonify({"content":"AI响应超时，请稍后重试"}),504
     except requests.exceptions.HTTPError as e:
-        # 把火山返回的真实错误打出来，方便你定位
-        print(f"❌ ARK HTTP 错误：{e}")
-        print(f"   响应内容：{r.text[:200] if 'r' in dir() else '无'}")
+        print(f" ARK HTTP 错误：{e}")
+        print(f" 响应内容：{r.text[:200] if 'r' in dir() else '无'}")
         return jsonify({"content": f"AI接口返回错误（{r.status_code}）：{r.text[:100]}"}), 500
 
     except Exception as e:
-        print(f"❌ ARK 其他错误：{repr(e)}")
+        print(f" ARK 其他错误：{repr(e)}")
         return jsonify({"content": f"请求失败：{str(e)}"}), 500
 
+#加 threaded=True，防连点卡死
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5002))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, threaded=True, debug=False)
