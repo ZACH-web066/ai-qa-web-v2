@@ -363,7 +363,7 @@ async function sendAiQuestion(){
     const inputEl = document.querySelector('input[placeholder*="拓展"], #aiInput');
     const question = (inputEl ? inputEl.value : "C语言结构").trim();
     
-    // 结果区（显示超时的那个div）
+    // 结果区（显示超时的div）
 const resultBox = document.getElementById('aiResult') || document.querySelector('div[style*="AI"] ~ div');
 resultBox.innerText = "正在请求，请稍候...";
 
