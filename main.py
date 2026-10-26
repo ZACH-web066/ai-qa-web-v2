@@ -20,9 +20,9 @@ API_KEY = os.getenv("VOLC_API_KEY", "")
 MODEL = os.getenv("VOLC_MODEL", "")
 
 if not API_KEY or not MODEL:
-    print("⚠️  警告：VOLC_API_KEY 或 VOLC_MODEL 未设置，请检查 .env 文件或 Railway 变量！")
+    print("  警告：VOLC_API_KEY 或 VOLC_MODEL 未设置，请检查 .env 文件或 Railway 变量！")
 else:
-    print(f"✅ API Key 已加载，模型：{MODEL}")
+    print(f" API Key 已加载，模型：{MODEL}")
 
 @app.route('/')
 def index():
@@ -33,7 +33,7 @@ def chat():
     if request.method == "OPTIONS":
         return '', 204
 
-    # ✅ 改动1：兼容更多字段名，加终端打印
+    #  兼容更多字段名，加终端打印
     data = request.get_json(force=True, silent=True) or {}
     user_msg = data.get('content') or data.get('prompt') or data.get('q') or data.get('message') or 'hi'
     print(f"📩 收到提问: {user_msg}")  # 终端看这行，确认不是 'hi' 就说明前端传过来了
